@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Setup key
+      - run: set -eu
+      - run: mkdir "$HOME/.ssh"
+      - run: echo "${{ secrets.key }}" > "$HOME/.ssh/key"
+      - run: chmod 600 "$HOME/.ssh/key"
+      # Prepare
+      - run: rm .git* -rf
+      # Deploy
+      - run: rsync -e "ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no" --archive --compress --delete . mukitby@mukit.by:/home/mukitby/mukit
+      - run: ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no mukitby@mukit.by bash /home/mukitby/mukit/deploy.sh
+      - run: ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no mukitby@mukit.by /usr/sbin/cloudlinux-selector restart --json --interpreter python --user mukitby --app-root /home/mukitby/mukit/
