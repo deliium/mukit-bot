@@ -1,9 +1,7 @@
 """FastAPI entry point that starts the Telegram bot on app startup."""
 
-from a2wsgi import ASGIMiddleware
 import logging
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -15,16 +13,18 @@ from app.utils import setup_logging
 
 logger = logging.getLogger(__name__)
 
+app = FastAPI(title="Mukit Bot", version="1.0.0")
 
 telegram_application: Optional[Application] = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Manage the lifespan of the FastAPI application and Telegram bot."""
+def initialize_bot() -> None:
+    """Initialize the Telegram bot (called from WSGI level)."""
     global telegram_application
-
-    # Startup
+    
+    if telegram_application is not None:
+        return  # Already initialized
+    
     setup_logging()
 
     if not BOT_TOKEN:
@@ -34,18 +34,30 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     telegram_application = Application.builder().token(BOT_TOKEN).build()
     setup_handlers(telegram_application)
+    
+    logger.info("Telegram application created and handlers set up")
 
-    # Initialize and start bot without blocking the FastAPI event loop
-    logger.info("Initializing Telegram application...")
-    await telegram_application.initialize()
-    logger.info("Starting Telegram application...")
-    await telegram_application.start()
-    logger.info("Starting polling...")
-    await telegram_application.updater.start_polling()
 
-    yield
+async def start_bot() -> None:
+    """Start the Telegram bot polling."""
+    global telegram_application
+    
+    if telegram_application is None:
+        initialize_bot()
+    
+    if telegram_application is not None:
+        logger.info("Initializing Telegram application...")
+        await telegram_application.initialize()
+        logger.info("Starting Telegram application...")
+        await telegram_application.start()
+        logger.info("Starting polling...")
+        await telegram_application.updater.start_polling()
 
-    # Shutdown
+
+async def stop_bot() -> None:
+    """Stop the Telegram bot."""
+    global telegram_application
+    
     if telegram_application is not None:
         logger.info("Stopping polling...")
         await telegram_application.updater.stop()
@@ -53,9 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await telegram_application.stop()
         logger.info("Shutting down Telegram application...")
         await telegram_application.shutdown()
-
-
-app = FastAPI(title="Mukit Bot", version="1.0.0", lifespan=lifespan)
+        telegram_application = None
 
 
 @app.get("/")
@@ -67,6 +77,3 @@ async def root() -> JSONResponse:
 async def healthz() -> JSONResponse:
     is_bot_running = telegram_application is not None
     return JSONResponse({"status": "ok", "bot_running": is_bot_running})
-
-
-application = ASGIMiddleware(app)
