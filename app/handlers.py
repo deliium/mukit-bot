@@ -119,6 +119,23 @@ async def remove_service_messages(update: Update, context: ContextTypes.DEFAULT_
         )
 
 
+async def handle_unpinned_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle unpinned messages - clear processed data if our pinned message was unpinned."""
+    if not update.message or not update.message.unpin_chat_message:
+        return
+    
+    chat_id = update.effective_chat.id
+    data = get_chat_data(chat_id)
+    
+    # Check if the unpinned message was our pinned message
+    if data.pinned_message_id and update.message.message_id == data.pinned_message_id:
+        logger.info(f"Pinned message {data.pinned_message_id} was unpinned in chat {chat_id}")
+        # Clear processed messages since the pinned message is gone
+        data.clear_processed()
+        data.clear_pinned()
+        logger.info(f"Cleared processed messages for chat {chat_id} due to pinned message unpinning")
+
+
 def setup_handlers(application: Application) -> None:
     """Set up all message and command handlers."""
     # Command handlers
@@ -130,4 +147,5 @@ def setup_handlers(application: Application) -> None:
     # Message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_message))
     application.add_handler(MessageHandler(filters.StatusUpdate.ALL, remove_service_messages))
+    application.add_handler(MessageHandler(filters.StatusUpdate.UNPINNED_MESSAGE, handle_unpinned_message))
 
