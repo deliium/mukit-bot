@@ -58,6 +58,22 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
         return
 
     try:
+        # Check if our pinned message still exists before processing
+        if data.pinned_message_id:
+            try:
+                # Try to get the message to see if it still exists
+                await context.bot.get_chat(chat_id)
+                # If we get here, the message exists, but let's also check if it's still pinned
+                chat_info = await context.bot.get_chat(chat_id)
+                if not hasattr(chat_info, 'pinned_message') or chat_info.pinned_message is None:
+                    # No pinned message in chat, clear our data
+                    data.clear_processed()
+                    data.clear_pinned()
+            except Exception:
+                # Message doesn't exist or we can't access it, clear our data
+                data.clear_processed()
+                data.clear_pinned()
+
         # Add new messages to processed messages list
         for msg_data in data.selected_messages:
             data.processed_messages.append({
