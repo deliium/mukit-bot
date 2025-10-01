@@ -25,10 +25,10 @@ _bot_thread = None
 def initialize_bot() -> None:
     """Initialize the Telegram bot."""
     global telegram_application
-    
+
     if telegram_application is not None:
         return  # Already initialized
-    
+
     setup_logging()
 
     if not BOT_TOKEN:
@@ -38,17 +38,17 @@ def initialize_bot() -> None:
 
     telegram_application = Application.builder().token(BOT_TOKEN).build()
     setup_handlers(telegram_application)
-    
+
     logger.info("Telegram application created and handlers set up")
 
 
 async def start_bot() -> None:
     """Start the Telegram bot polling."""
     global telegram_application
-    
+
     if telegram_application is None:
         initialize_bot()
-    
+
     if telegram_application is not None:
         logger.info("Initializing Telegram application...")
         await telegram_application.initialize()
@@ -61,7 +61,7 @@ async def start_bot() -> None:
 async def stop_bot() -> None:
     """Stop the Telegram bot."""
     global telegram_application
-    
+
     if telegram_application is not None:
         logger.info("Stopping polling...")
         await telegram_application.updater.stop()
@@ -75,16 +75,16 @@ async def stop_bot() -> None:
 def run_bot_in_thread():
     """Run the bot in a separate thread for local development."""
     global _bot_running
-    
+
     try:
         _bot_running = True
         # Create new event loop for this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         # Start the bot
         loop.run_until_complete(start_bot())
-        
+
         # Keep the loop running
         loop.run_forever()
     except Exception as e:
@@ -96,7 +96,7 @@ def run_bot_in_thread():
 def start_bot_background():
     """Start the bot in a background thread for local development."""
     global _bot_thread
-    
+
     if _bot_thread is None or not _bot_thread.is_alive():
         _bot_thread = threading.Thread(target=run_bot_in_thread, daemon=True)
         _bot_thread.start()

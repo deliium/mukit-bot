@@ -3,7 +3,6 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
 from telegram.ext import ContextTypes
 
@@ -18,7 +17,9 @@ def format_timestamp() -> str:
     return datetime.now().strftime("%H.%M")
 
 
-async def safe_delete_message(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int) -> bool:
+async def safe_delete_message(
+    context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int
+) -> bool:
     """Safely delete a message, return True if successful."""
     try:
         await context.bot.delete_message(chat_id, message_id)
@@ -28,21 +29,29 @@ async def safe_delete_message(context: ContextTypes.DEFAULT_TYPE, chat_id: int, 
         return False
 
 
-async def safe_edit_message(context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, text: str) -> bool:
+async def safe_edit_message(
+    context: ContextTypes.DEFAULT_TYPE, chat_id: int, message_id: int, text: str
+) -> bool:
     """Safely edit a message, return True if successful."""
     try:
-        await context.bot.edit_message_text(chat_id=chat_id, message_id=message_id, text=text)
+        await context.bot.edit_message_text(
+            chat_id=chat_id, message_id=message_id, text=text
+        )
         return True
     except Exception as e:
         logger.warning(f"Could not edit message {message_id}: {e}")
         return False
 
 
-async def create_new_pinned_message(chat_id: int, context: ContextTypes.DEFAULT_TYPE, summary_text: str) -> None:
+async def create_new_pinned_message(
+    chat_id: int, context: ContextTypes.DEFAULT_TYPE, summary_text: str
+) -> None:
     """Create a new pinned message and track its ID."""
     try:
         summary_message = await context.bot.send_message(chat_id, summary_text)
-        await context.bot.pin_chat_message(chat_id, summary_message.message_id, disable_notification=True)
+        await context.bot.pin_chat_message(
+            chat_id, summary_message.message_id, disable_notification=True
+        )
 
         data = get_chat_data(chat_id)
         data.pinned_message_id = summary_message.message_id
@@ -50,7 +59,9 @@ async def create_new_pinned_message(chat_id: int, context: ContextTypes.DEFAULT_
         logger.error(f"Error creating pinned message: {e}")
 
 
-async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def process_selected_messages(
+    chat_id: int, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Process all selected messages and append to pinned message."""
     data = get_chat_data(chat_id)
 
@@ -63,7 +74,10 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
             try:
                 # Check if there's still a pinned message in the chat
                 chat_info = await context.bot.get_chat(chat_id)
-                if not hasattr(chat_info, 'pinned_message') or chat_info.pinned_message is None:
+                if (
+                    not hasattr(chat_info, "pinned_message")
+                    or chat_info.pinned_message is None
+                ):
                     # No pinned message in chat, clear our data
                     data.clear_processed()
                     data.clear_pinned()
@@ -74,15 +88,13 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
 
         # Add new messages to processed messages list
         for msg_data in data.selected_messages:
-            data.processed_messages.append({
-                "timestamp": msg_data["timestamp"],
-                "content": msg_data["content"]
-            })
+            data.processed_messages.append(
+                {"timestamp": msg_data["timestamp"], "content": msg_data["content"]}
+            )
 
         # Create the complete summary text with all processed messages
         summary_lines = [
-            f"{msg['timestamp']} {msg['content']}"
-            for msg in data.processed_messages
+            f"{msg['timestamp']} {msg['content']}" for msg in data.processed_messages
         ]
 
         if summary_lines:
@@ -90,7 +102,9 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
 
             # Update or create pinned message
             if data.pinned_message_id:
-                success = await safe_edit_message(context, chat_id, data.pinned_message_id, summary_text)
+                success = await safe_edit_message(
+                    context, chat_id, data.pinned_message_id, summary_text
+                )
                 if not success:
                     await create_new_pinned_message(chat_id, context, summary_text)
             else:
@@ -107,7 +121,9 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
         logger.error(f"Error processing selected messages: {e}")
 
 
-async def auto_process_delayed(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def auto_process_delayed(
+    chat_id: int, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Auto-process selected messages after a delay."""
     await asyncio.sleep(AUTO_PROCESS_DELAY)
     await process_selected_messages(chat_id, context)
@@ -131,7 +147,9 @@ async def clear_chat_data(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> b
     # Clear pinned message
     if data.pinned_message_id:
         try:
-            await context.bot.unpin_chat_message(chat_id, data.pinned_message_id, disable_notification=True)
+            await context.bot.unpin_chat_message(
+                chat_id, data.pinned_message_id, disable_notification=True
+            )
             await safe_delete_message(context, chat_id, data.pinned_message_id)
             data.clear_pinned()
             cleared = True
@@ -139,4 +157,3 @@ async def clear_chat_data(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> b
             logger.warning(f"Could not clear pinned message: {e}")
 
     return cleared
-

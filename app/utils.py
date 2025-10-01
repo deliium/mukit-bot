@@ -11,4 +11,3 @@ def setup_logging() -> None:
         format=LOG_FORMAT,
         level=getattr(logging, LOG_LEVEL.upper()),
     )
-

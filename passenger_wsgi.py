@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 from a2wsgi import ASGIMiddleware
-from app.main import app, start_bot, stop_bot
+from app.main import app, start_bot
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +14,16 @@ _bot_thread = None
 def run_bot_in_thread():
     """Run the bot in a separate thread."""
     global _bot_running
-    
+
     try:
         _bot_running = True
         # Create new event loop for this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         # Start the bot
         loop.run_until_complete(start_bot())
-        
+
         # Keep the loop running
         loop.run_forever()
     except Exception as e:
@@ -35,7 +35,7 @@ def run_bot_in_thread():
 def start_bot_background():
     """Start the bot in a background thread."""
     global _bot_thread
-    
+
     if _bot_thread is None or not _bot_thread.is_alive():
         _bot_thread = threading.Thread(target=run_bot_in_thread, daemon=True)
         _bot_thread.start()
@@ -45,7 +45,7 @@ def start_bot_background():
 def stop_bot_background():
     """Stop the bot background thread."""
     global _bot_running, _bot_thread
-    
+
     if _bot_running and _bot_thread and _bot_thread.is_alive():
         # Signal the bot to stop
         _bot_running = False

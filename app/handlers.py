@@ -5,7 +5,13 @@ import logging
 import re
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from app.models import get_chat_data
 from app.services import (
@@ -28,16 +34,22 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /help command."""
-    await update.message.reply_text("Available commands: /start, /help, /process, /clear")
+    await update.message.reply_text(
+        "Available commands: /start, /help, /process, /clear"
+    )
 
 
-async def process_selected_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def process_selected_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Manual process command for immediate processing."""
     chat_id = update.effective_chat.id
     await process_selected_messages(chat_id, context)
 
 
-async def clear_selected_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def clear_selected_command(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Clear all selected messages, processed messages, and pinned message for the current chat."""
     chat_id = update.effective_chat.id
     cleared = await clear_chat_data(chat_id, context)
@@ -49,14 +61,14 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Handle text messages that start with '.'."""
     if not update.message or not update.message.text:
         return
-    
+
     text = update.message.text
     if not text.startswith("."):
         return
-    
+
     chat_id = update.effective_chat.id
     data = get_chat_data(chat_id)
-    
+
     # Extract and store the message data
     # Support prefixes ".H.MM" or ".HH.MM" to override timestamp
     time_prefix_regex = r"^\.(\d{1,2})\.(\d{2})(?:\s+|$)"
@@ -67,7 +79,7 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if 0 <= hours <= 23 and 0 <= minutes <= 59:
             timestamp = f"{hours:02d}.{minutes:02d}"
             # Remaining content after the matched time prefix
-            clean_content = text[match.end():].strip()
+            clean_content = text[match.end() :].strip()
         else:
             # Invalid time, treat as regular '.' message
             timestamp = format_timestamp()
@@ -89,33 +101,33 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             m = re.match(pattern, formatted_content, flags=re.IGNORECASE)
             if m:
                 matched_cat = m.group(1)
-                rest = formatted_content[m.end():].strip()
+                rest = formatted_content[m.end() :].strip()
                 if rest:
                     formatted_content = f"={matched_cat}= ({rest})"
                 else:
                     # If no rest, still wrap the category and leave no parentheses
                     formatted_content = f"={matched_cat}="
                 break
-    
+
     message_data = {
         "message_id": update.message.message_id,
         "content": formatted_content,
-        "timestamp": timestamp
+        "timestamp": timestamp,
     }
-    
+
     data.selected_messages.append(message_data)
-    
+
     # Auto-process after a delay to allow for multiple messages
     asyncio.create_task(auto_process_delayed(chat_id, context))
 
 
-async def remove_service_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def remove_service_messages(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
     """Remove service messages like pin/unpin notifications."""
     if update.message and update.message.from_user.is_bot:
         await safe_delete_message(
-            context, 
-            update.message.chat_id, 
-            update.message.message_id
+            context, update.message.chat_id, update.message.message_id
         )
 
 
@@ -128,6 +140,9 @@ def setup_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("clear", clear_selected_command))
 
     # Message handlers
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_message))
-    application.add_handler(MessageHandler(filters.StatusUpdate.ALL, remove_service_messages))
-
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, echo_message)
+    )
+    application.add_handler(
+        MessageHandler(filters.StatusUpdate.ALL, remove_service_messages)
+    )
