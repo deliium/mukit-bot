@@ -1,5 +1,6 @@
 """FastAPI entry point that starts the Telegram bot on app startup."""
 
+from a2wsgi import ASGIMiddleware
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
@@ -66,4 +67,6 @@ async def root() -> JSONResponse:
 async def healthz() -> JSONResponse:
     is_bot_running = telegram_application is not None
     return JSONResponse({"status": "ok", "bot_running": is_bot_running})
- 
+
+
+application = ASGIMiddleware(app)
