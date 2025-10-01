@@ -58,6 +58,10 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
         return
 
     try:
+        logger.info(f"Processing {len(data.selected_messages)} selected messages for chat {chat_id}")
+        logger.info(f"Current processed_messages count: {len(data.processed_messages)}")
+        logger.info(f"Current pinned_message_id: {data.pinned_message_id}")
+
         # Add new messages to processed messages list
         for msg_data in data.selected_messages:
             data.processed_messages.append({
@@ -73,13 +77,17 @@ async def process_selected_messages(chat_id: int, context: ContextTypes.DEFAULT_
 
         if summary_lines:
             summary_text = "\n".join(summary_lines)
+            logger.info(f"Created summary with {len(summary_lines)} lines")
 
             # Update or create pinned message
             if data.pinned_message_id:
+                logger.info(f"Updating existing pinned message {data.pinned_message_id}")
                 success = await safe_edit_message(context, chat_id, data.pinned_message_id, summary_text)
                 if not success:
+                    logger.info("Edit failed, creating new pinned message")
                     await create_new_pinned_message(chat_id, context, summary_text)
             else:
+                logger.info("Creating new pinned message")
                 await create_new_pinned_message(chat_id, context, summary_text)
 
             # Delete all selected messages
