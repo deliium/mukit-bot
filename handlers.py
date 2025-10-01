@@ -15,6 +15,7 @@ from services import (
     process_selected_messages,
     safe_delete_message,
 )
+from config import CATEGORIES
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +76,30 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Regular '.' message: use current time
         clean_content = text[1:].strip()
         timestamp = format_timestamp()
+
+    # Apply category formatting: find first category occurring as a separate word prefix
+    formatted_content = clean_content
+    if CATEGORIES and formatted_content:
+        # We consider category match at the start of content or after leading spaces
+        # and followed by a space or end-of-string
+        # Sort categories by length descending to prefer longest match first
+        for category in sorted(CATEGORIES, key=len, reverse=True):
+            # Build regex to match category as a whole word at start
+            pattern = rf"^\s*({re.escape(category)})(?:\s+|$)"
+            m = re.match(pattern, formatted_content, flags=re.IGNORECASE)
+            if m:
+                matched_cat = m.group(1)
+                rest = formatted_content[m.end():].strip()
+                if rest:
+                    formatted_content = f"={matched_cat}= ({rest})"
+                else:
+                    # If no rest, still wrap the category and leave no parentheses
+                    formatted_content = f"={matched_cat}="
+                break
     
     message_data = {
         "message_id": update.message.message_id,
-        "content": clean_content,
+        "content": formatted_content,
         "timestamp": timestamp
     }
     
