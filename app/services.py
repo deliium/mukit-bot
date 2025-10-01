@@ -7,8 +7,8 @@ from typing import Optional
 
 from telegram.ext import ContextTypes
 
-from config import AUTO_PROCESS_DELAY
-from models import get_chat_data
+from app.config import AUTO_PROCESS_DELAY
+from app.models import get_chat_data
 
 logger = logging.getLogger(__name__)
 

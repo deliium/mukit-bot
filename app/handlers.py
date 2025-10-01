@@ -7,15 +7,15 @@ import re
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
-from models import get_chat_data
-from services import (
+from app.models import get_chat_data
+from app.services import (
     auto_process_delayed,
     clear_chat_data,
     format_timestamp,
     process_selected_messages,
     safe_delete_message,
 )
-from config import CATEGORIES
+from app.config import CATEGORIES
 
 logger = logging.getLogger(__name__)
 
