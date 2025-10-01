@@ -19,5 +19,5 @@ jobs:
       - run: rm .git* -rf
       # Deploy
       - run: rsync -e "ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no" --archive --compress --delete . mukitby@mukit.by:/home/mukitby/bot.mukit.by
-      - run: ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no mukitby@mukit.by bash /home/mukitby/bot.mukit.bydeploy.sh
+      - run: ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no mukitby@mukit.by bash /home/mukitby/bot.mukit.by/deploy.sh
       - run: ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no mukitby@mukit.by /usr/sbin/cloudlinux-selector restart --json --interpreter python --user mukitby --app-root /home/mukitby/bot.mukit.by
