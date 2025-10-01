@@ -127,17 +127,11 @@ async def handle_unpinned_message(update: Update, context: ContextTypes.DEFAULT_
     chat_id = update.effective_chat.id
     data = get_chat_data(chat_id)
     
-    logger.info(f"Unpin event detected in chat {chat_id}, message_id: {update.message.message_id}, our pinned_id: {data.pinned_message_id}")
-    
     # Check if the unpinned message was our pinned message
     if data.pinned_message_id and update.message.message_id == data.pinned_message_id:
-        logger.info(f"Pinned message {data.pinned_message_id} was unpinned in chat {chat_id}")
         # Clear processed messages since the pinned message is gone
         data.clear_processed()
         data.clear_pinned()
-        logger.info(f"Cleared processed messages for chat {chat_id} due to pinned message unpinning")
-    else:
-        logger.info(f"Unpinned message {update.message.message_id} was not our pinned message {data.pinned_message_id}")
 
 
 def setup_handlers(application: Application) -> None:
@@ -151,5 +145,6 @@ def setup_handlers(application: Application) -> None:
     # Message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo_message))
     application.add_handler(MessageHandler(filters.StatusUpdate.ALL, remove_service_messages))
-    application.add_handler(MessageHandler(filters.StatusUpdate.UNPINNED_MESSAGE, handle_unpinned_message))
+    # Temporarily disable unpin handler to see if that's causing the issue
+    # application.add_handler(MessageHandler(filters.StatusUpdate.UNPINNED_MESSAGE, handle_unpinned_message))
 
