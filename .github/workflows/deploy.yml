@@ -17,6 +17,7 @@ jobs:
       - run: chmod 600 "$HOME/.ssh/key"
       # Prepare
       - run: rm .git* -rf
+      - run: echo "${{ secrets.env }}" > ".env"
       # Deploy
       - run: rsync -e "ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no" --archive --compress --delete . mukitby@mukit.by:/home/mukitby/bot.mukit.by
       - run: ssh -i $HOME/.ssh/key -o StrictHostKeyChecking=no mukitby@mukit.by bash /home/mukitby/bot.mukit.by/deploy.sh
