@@ -88,9 +88,33 @@ async def process_selected_messages(
 
         # Add new messages to processed messages list
         for msg_data in data.selected_messages:
-            data.processed_messages.append(
-                {"timestamp": msg_data["timestamp"], "content": msg_data["content"]}
-            )
+            new_message = {
+                "timestamp": msg_data["timestamp"],
+                "content": msg_data["content"]
+            }
+            
+            # Check if this is a duplicate category (same category as the last message)
+            if data.processed_messages:
+                last_message = data.processed_messages[-1]
+                # Extract category from last message (between = signs)
+                last_content = last_message["content"]
+                if last_content.startswith("=") and "=" in last_content[1:]:
+                    last_category_end = last_content.find("=", 1)
+                    last_category = last_content[1:last_category_end]
+                    
+                    # Extract category from new message
+                    new_content = new_message["content"]
+                    if new_content.startswith("=") and "=" in new_content[1:]:
+                        new_category_end = new_content.find("=", 1)
+                        new_category = new_content[1:new_category_end]
+                        
+                        # If same category, replace the last message instead of adding new one
+                        if last_category.lower() == new_category.lower():
+                            data.processed_messages[-1] = new_message
+                            continue
+            
+            # If not a duplicate category, add as new message
+            data.processed_messages.append(new_message)
 
         # Create the complete summary text with all processed messages
         summary_lines = [
