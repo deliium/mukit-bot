@@ -88,7 +88,7 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         # Regular '.' message: use current time
         clean_content = text[1:].strip()
         timestamp = format_timestamp()
-    
+
     # Normalize content: lowercase first letter if it exists
     if clean_content and clean_content[0].isupper():
         clean_content = clean_content[0].lower() + clean_content[1:]
