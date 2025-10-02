@@ -1,1 +1,1 @@
-![mukit-bot](http://counter.seku.su/cmoe?name=mukit-bot)
+![mukit-bot](http://counter.seku.su/cmoe?name=mukit-bot&theme=gelbooru-h)
