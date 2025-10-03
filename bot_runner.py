@@ -4,7 +4,6 @@
 import asyncio
 import json
 import logging
-import os
 import signal
 import sys
 from pathlib import Path
@@ -31,7 +30,11 @@ def write_status(status: str, error: str = None) -> None:
         status_data = {
             "status": status,
             "error": error,
-            "timestamp": asyncio.get_event_loop().time() if asyncio.get_event_loop().is_running() else 0
+            "timestamp": (
+                asyncio.get_event_loop().time()
+                if asyncio.get_event_loop().is_running()
+                else 0
+            ),
         }
         with open(STATUS_FILE, "w") as f:
             json.dump(status_data, f)
@@ -43,7 +46,7 @@ async def main() -> None:
     """Main function to run the bot."""
     setup_logging()
     write_status("starting")
-    
+
     if not BOT_TOKEN:
         error_msg = "BOT_TOKEN environment variable is not set"
         logger.error(error_msg)
@@ -54,25 +57,25 @@ async def main() -> None:
         # Create application
         application = Application.builder().token(BOT_TOKEN).build()
         setup_handlers(application)
-        
+
         write_status("initializing")
         logger.info("Initializing Telegram application...")
         await application.initialize()
-        
+
         write_status("starting")
         logger.info("Starting Telegram application...")
         await application.start()
-        
+
         write_status("running")
         logger.info("Starting polling...")
         await application.updater.start_polling()
-        
+
         logger.info("Bot is running and polling for updates...")
-        
+
         # Keep the bot running
         while True:
             await asyncio.sleep(1)
-            
+
     except Exception as e:
         error_msg = f"Bot error: {e}"
         logger.error(error_msg)
@@ -81,7 +84,7 @@ async def main() -> None:
     finally:
         write_status("stopping")
         try:
-            if 'application' in locals():
+            if "application" in locals():
                 logger.info("Stopping polling...")
                 await application.updater.stop()
                 logger.info("Stopping Telegram application...")
@@ -110,7 +113,7 @@ if __name__ == "__main__":
     # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

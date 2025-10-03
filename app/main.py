@@ -36,12 +36,14 @@ async def root() -> JSONResponse:
 @app.get("/healthz")
 async def healthz() -> JSONResponse:
     bot_status = get_bot_status()
-    return JSONResponse({
-        "status": "ok", 
-        "bot_status": bot_status["status"],
-        "bot_error": bot_status.get("error"),
-        "bot_running": bot_status["status"] == "running"
-    })
+    return JSONResponse(
+        {
+            "status": "ok",
+            "bot_status": bot_status["status"],
+            "bot_error": bot_status.get("error"),
+            "bot_running": bot_status["status"] == "running",
+        }
+    )
 
 
 @app.get("/bot/status")
