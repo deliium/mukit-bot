@@ -85,9 +85,11 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             timestamp = format_timestamp()
             clean_content = text[1:].strip()
     else:
-        # Regular '.' message: use current time
+        # Regular '.' message: use message timestamp from Telegram
         clean_content = text[1:].strip()
-        timestamp = format_timestamp()
+        # Use the actual message time from Telegram instead of current time
+        message_time = update.message.date
+        timestamp = message_time.strftime("%H.%M")
 
     # Normalize content: lowercase first letter if it exists
     if clean_content and clean_content[0].isupper():
