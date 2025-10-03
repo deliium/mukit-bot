@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import re
-from datetime import datetime
 
 from telegram import Update
 from telegram.ext import (
