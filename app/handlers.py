@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import re
+from datetime import datetime
 
 from telegram import Update
 from telegram.ext import (
@@ -87,9 +88,11 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     else:
         # Regular '.' message: use message timestamp from Telegram
         clean_content = text[1:].strip()
-        # Use the actual message time from Telegram instead of current time
+        # Use the actual message time from Telegram, converted to local time
         message_time = update.message.date
-        timestamp = message_time.strftime("%H.%M")
+        # Convert UTC to local time (message_time is UTC, we need local time)
+        local_time = message_time.astimezone()  # Convert to system local timezone
+        timestamp = local_time.strftime("%H.%M")
 
     # Normalize content: lowercase first letter if it exists
     if clean_content and clean_content[0].isupper():
