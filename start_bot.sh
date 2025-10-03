@@ -51,17 +51,24 @@ fi
 
 # Function to check if bot is running
 is_bot_running() {
-    if [ -f "$PID_FILE" ]; then
-        local pid=$(cat "$PID_FILE")
-        if kill -0 "$pid" 2>/dev/null; then
-            return 0  # Bot is running
-        else
-            # PID file exists but process is dead
-            rm -f "$PID_FILE"
-            return 1
-        fi
+    if [ ! -f "$PID_FILE" ]; then
+        return 1  # No PID file, bot is not running
     fi
-    return 1  # Bot is not running
+    
+    local pid=$(cat "$PID_FILE" 2>/dev/null)
+    if [ -z "$pid" ]; then
+        # PID file exists but is empty or unreadable
+        rm -f "$PID_FILE"
+        return 1
+    fi
+    
+    if kill -0 "$pid" 2>/dev/null; then
+        return 0  # Bot is running
+    else
+        # PID file exists but process is dead
+        rm -f "$PID_FILE"
+        return 1
+    fi
 }
 
 # Function to start the bot
@@ -113,12 +120,21 @@ start_bot() {
 
 # Function to stop the bot
 stop_bot() {
-    if ! is_bot_running; then
-        echo "$(date): Bot is not running"
+    # Check if PID file exists and get PID
+    if [ ! -f "$PID_FILE" ]; then
+        echo "$(date): Bot is not running (no PID file)"
         return 0
     fi
     
     local pid=$(cat "$PID_FILE")
+    
+    # Check if process is actually running
+    if ! kill -0 "$pid" 2>/dev/null; then
+        echo "$(date): Bot is not running (process $pid not found)"
+        rm -f "$PID_FILE"
+        return 0
+    fi
+    
     echo "$(date): Stopping bot (PID: $pid)..."
     
     # Send SIGTERM to gracefully stop the bot
@@ -135,10 +151,17 @@ stop_bot() {
     if kill -0 "$pid" 2>/dev/null; then
         echo "$(date): Force killing bot..."
         kill -KILL "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+    
+    # Final check and cleanup
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "$(date): Warning: Could not stop bot process $pid"
+    else
+        echo "$(date): Bot stopped successfully"
     fi
     
     rm -f "$PID_FILE"
-    echo "$(date): Bot stopped"
 }
 
 # Function to restart the bot
