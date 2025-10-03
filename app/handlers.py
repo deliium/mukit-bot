@@ -87,11 +87,18 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     else:
         # Regular '.' message: use message timestamp from Telegram
         clean_content = text[1:].strip()
-        # Use the actual message time from Telegram, converted to local time
+        # Use the actual message time from Telegram as shown in chat
         message_time = update.message.date
-        # Convert UTC to local time (message_time is UTC, we need local time)
-        local_time = message_time.astimezone()  # Convert to system local timezone
-        timestamp = local_time.strftime("%H.%M")
+
+        # Telegram message.date is UTC, but we want the time as it appears in the user's chat
+        # Convert UTC to the user's local timezone (same timezone as the chat interface)
+        try:
+            # Convert UTC to local timezone
+            local_time = message_time.astimezone()
+            timestamp = local_time.strftime("%H.%M")
+        except Exception:
+            # Fallback to current time if conversion fails
+            timestamp = format_timestamp()
 
     # Normalize content: lowercase first letter if it exists
     if clean_content and clean_content[0].isupper():
