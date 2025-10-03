@@ -15,6 +15,7 @@ LOG_FILE="/home/mukitby/bot.mukit.by/bot.log"
 VENV_ACTIVATE="/home/mukitby/virtualenv/bot.mukit.by/3.12/bin/activate"
 
 # Parse command line arguments
+COMMAND="check"  # Default command
 while [[ $# -gt 0 ]]; do
     case $1 in
         --production)
@@ -23,6 +24,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --local)
             PRODUCTION_MODE=false
+            shift
+            ;;
+        start|stop|restart|status|check)
+            COMMAND="$1"
             shift
             ;;
         *)
@@ -155,7 +160,7 @@ check_and_restart() {
 }
 
 # Main script logic
-case "${1:-check}" in
+case "$COMMAND" in
     start)
         start_bot
         ;;

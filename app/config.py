@@ -2,6 +2,7 @@
 
 import os
 from typing import Final
+from app.categories import categories
 
 try:
     # Load variables from a .env file if present
@@ -16,9 +17,7 @@ except Exception:
 BOT_TOKEN: Final[str] = os.getenv("BOT_TOKEN", "")
 
 # Import categories from categories.py and flatten them
-from app.categories import categories
 
-# Flatten all categories into a single list, excluding 'Ушедшее'
 CATEGORIES: Final[list[str]] = []
 for category_name, subcategories in categories.items():
     CATEGORIES.extend(subcategories)
