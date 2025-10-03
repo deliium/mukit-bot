@@ -138,30 +138,67 @@ stop_bot() {
     echo "$(date): Stopping bot (PID: $pid)..."
     
     # Send SIGTERM to gracefully stop the bot
+    echo "$(date): Sending SIGTERM to process $pid..."
     kill -TERM "$pid" 2>/dev/null || true
     
     # Wait for graceful shutdown
     local count=0
     while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
+        echo "$(date): Waiting for process $pid to stop... ($count/10)"
         sleep 1
         count=$((count + 1))
     done
     
     # Force kill if still running
     if kill -0 "$pid" 2>/dev/null; then
-        echo "$(date): Force killing bot..."
+        echo "$(date): Force killing bot process $pid..."
         kill -KILL "$pid" 2>/dev/null || true
-        sleep 1
+        sleep 2
+        
+        # Check if it's still running after force kill
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "$(date): Process $pid still running after SIGKILL, trying to kill child processes..."
+            # Try to kill child processes
+            pkill -P "$pid" 2>/dev/null || true
+            sleep 1
+        fi
     fi
     
     # Final check and cleanup
     if kill -0 "$pid" 2>/dev/null; then
         echo "$(date): Warning: Could not stop bot process $pid"
+        echo "$(date): You may need to manually kill the process: kill -9 $pid"
     else
         echo "$(date): Bot stopped successfully"
     fi
     
+    # Clean up any remaining bot processes
+    cleanup_bot_processes
+    
     rm -f "$PID_FILE"
+}
+
+# Function to cleanup any remaining bot processes
+cleanup_bot_processes() {
+    echo "$(date): Checking for any remaining bot processes..."
+    
+    # Find any python processes running bot_runner.py
+    local remaining_pids=$(pgrep -f "bot_runner.py" 2>/dev/null || true)
+    
+    if [ -n "$remaining_pids" ]; then
+        echo "$(date): Found remaining bot processes: $remaining_pids"
+        for pid in $remaining_pids; do
+            echo "$(date): Killing remaining bot process $pid..."
+            kill -TERM "$pid" 2>/dev/null || true
+            sleep 1
+            if kill -0 "$pid" 2>/dev/null; then
+                echo "$(date): Force killing remaining bot process $pid..."
+                kill -KILL "$pid" 2>/dev/null || true
+            fi
+        done
+    else
+        echo "$(date): No remaining bot processes found"
+    fi
 }
 
 # Function to restart the bot
