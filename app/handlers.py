@@ -74,6 +74,8 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Handle special ".-" command to remove last message
     if text == ".-":
         await remove_last_message(chat_id, context)
+        # Delete the command message itself
+        await safe_delete_message(context, chat_id, update.message.message_id)
         return
 
     # Extract and store the message data
@@ -177,9 +179,7 @@ async def remove_last_message(chat_id: int, context: ContextTypes.DEFAULT_TYPE) 
         # No more messages, clear the pinned message
         if data.pinned_message_id:
             try:
-                await context.bot.unpin_chat_message(
-                    chat_id, data.pinned_message_id, disable_notification=True
-                )
+                await context.bot.unpin_chat_message(chat_id, data.pinned_message_id)
                 await safe_delete_message(context, chat_id, data.pinned_message_id)
                 data.clear_pinned()
             except Exception as e:

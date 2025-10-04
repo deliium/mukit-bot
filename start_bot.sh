@@ -54,14 +54,14 @@ is_bot_running() {
     if [ ! -f "$PID_FILE" ]; then
         return 1  # No PID file, bot is not running
     fi
-    
+
     local pid=$(cat "$PID_FILE" 2>/dev/null)
     if [ -z "$pid" ]; then
         # PID file exists but is empty or unreadable
         rm -f "$PID_FILE"
         return 1
     fi
-    
+
     if kill -0 "$pid" 2>/dev/null; then
         return 0  # Bot is running
     else
@@ -77,13 +77,13 @@ start_bot() {
         echo "$(date): Bot is already running (PID: $(cat $PID_FILE))"
         return 0
     fi
-    
+
     echo "$(date): Starting Mukit Bot..."
     echo "$(date): Mode: $([ "$PRODUCTION_MODE" = true ] && echo "production" || echo "local")"
-    
+
     # Change to bot directory
     cd "$BOT_DIR"
-    
+
     # Prepare the command based on mode
     if [ "$PRODUCTION_MODE" = true ]; then
         # Production mode: activate virtual environment
@@ -98,14 +98,14 @@ start_bot() {
         # Local mode: use system python
         BOT_CMD="python3 $BOT_SCRIPT"
     fi
-    
+
     # Start the bot in background and save PID
     nohup bash -c "$BOT_CMD" > "$LOG_FILE" 2>&1 &
     local bot_pid=$!
-    
+
     # Save PID to file
     echo "$bot_pid" > "$PID_FILE"
-    
+
     # Wait a moment and check if it's still running
     sleep 2
     if kill -0 "$bot_pid" 2>/dev/null; then
@@ -125,22 +125,22 @@ stop_bot() {
         echo "$(date): Bot is not running (no PID file)"
         return 0
     fi
-    
+
     local pid=$(cat "$PID_FILE")
-    
+
     # Check if process is actually running
     if ! kill -0 "$pid" 2>/dev/null; then
         echo "$(date): Bot is not running (process $pid not found)"
         rm -f "$PID_FILE"
         return 0
     fi
-    
+
     echo "$(date): Stopping bot (PID: $pid)..."
-    
+
     # Send SIGTERM to gracefully stop the bot
     echo "$(date): Sending SIGTERM to process $pid..."
     kill -TERM "$pid" 2>/dev/null || true
-    
+
     # Wait for graceful shutdown
     local count=0
     while kill -0 "$pid" 2>/dev/null && [ $count -lt 10 ]; do
@@ -148,13 +148,13 @@ stop_bot() {
         sleep 1
         count=$((count + 1))
     done
-    
+
     # Force kill if still running
     if kill -0 "$pid" 2>/dev/null; then
         echo "$(date): Force killing bot process $pid..."
         kill -KILL "$pid" 2>/dev/null || true
         sleep 2
-        
+
         # Check if it's still running after force kill
         if kill -0 "$pid" 2>/dev/null; then
             echo "$(date): Process $pid still running after SIGKILL, trying to kill child processes..."
@@ -163,7 +163,7 @@ stop_bot() {
             sleep 1
         fi
     fi
-    
+
     # Final check and cleanup
     if kill -0 "$pid" 2>/dev/null; then
         echo "$(date): Warning: Could not stop bot process $pid"
@@ -171,20 +171,20 @@ stop_bot() {
     else
         echo "$(date): Bot stopped successfully"
     fi
-    
+
     # Clean up any remaining bot processes
     cleanup_bot_processes
-    
+
     rm -f "$PID_FILE"
 }
 
 # Function to cleanup any remaining bot processes
 cleanup_bot_processes() {
     echo "$(date): Checking for any remaining bot processes..."
-    
+
     # Find any python processes running bot_runner.py
     local remaining_pids=$(pgrep -f "bot_runner.py" 2>/dev/null || true)
-    
+
     if [ -n "$remaining_pids" ]; then
         echo "$(date): Found remaining bot processes: $remaining_pids"
         for pid in $remaining_pids; do
