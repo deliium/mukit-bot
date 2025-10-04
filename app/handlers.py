@@ -20,6 +20,8 @@ from app.services import (
     format_timestamp,
     process_selected_messages,
     safe_delete_message,
+    safe_edit_message,
+    create_new_pinned_message,
 )
 from app.config import CATEGORIES
 
@@ -68,6 +70,11 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     chat_id = update.effective_chat.id
     data = get_chat_data(chat_id)
+
+    # Handle special ".-" command to remove last message
+    if text == ".-":
+        await remove_last_message(chat_id, context)
+        return
 
     # Extract and store the message data
     # Support prefixes ".H.MM" or ".HH.MM" to override timestamp
@@ -135,6 +142,48 @@ async def echo_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     # Auto-process after a delay to allow for multiple messages
     asyncio.create_task(auto_process_delayed(chat_id, context))
+
+
+async def remove_last_message(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Remove the last message from processed messages and update pinned message."""
+    data = get_chat_data(chat_id)
+
+    if not data.processed_messages:
+        # No messages to remove
+        return
+
+    # Remove the last processed message
+    data.processed_messages.pop()
+
+    # Update the pinned message with remaining messages
+    if data.processed_messages:
+        # Create the updated summary text
+        summary_lines = [
+            f"{msg['timestamp']} {msg['content']}" for msg in data.processed_messages
+        ]
+        summary_text = "\n".join(summary_lines)
+
+        # Update or create pinned message
+        if data.pinned_message_id:
+            success = await safe_edit_message(
+                context, chat_id, data.pinned_message_id, summary_text
+            )
+            if not success:
+                # If edit failed, create new pinned message
+                await create_new_pinned_message(chat_id, context, summary_text)
+        else:
+            await create_new_pinned_message(chat_id, context, summary_text)
+    else:
+        # No more messages, clear the pinned message
+        if data.pinned_message_id:
+            try:
+                await context.bot.unpin_chat_message(
+                    chat_id, data.pinned_message_id, disable_notification=True
+                )
+                await safe_delete_message(context, chat_id, data.pinned_message_id)
+                data.clear_pinned()
+            except Exception as e:
+                logger.warning(f"Could not clear pinned message: {e}")
 
 
 async def remove_service_messages(
