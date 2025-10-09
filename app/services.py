@@ -70,6 +70,7 @@ async def process_selected_messages(
 
     try:
         # Check if our pinned message still exists before processing
+        pinned_message_was_removed = False
         if data.pinned_message_id:
             try:
                 # Check if there's still a pinned message in the chat
@@ -81,10 +82,12 @@ async def process_selected_messages(
                     # No pinned message in chat, clear our data
                     data.clear_processed()
                     data.clear_pinned()
+                    pinned_message_was_removed = True
             except Exception:
                 # Message doesn't exist or we can't access it, clear our data
                 data.clear_processed()
                 data.clear_pinned()
+                pinned_message_was_removed = True
 
         # Add new messages to processed messages list
         for msg_data in data.selected_messages:
@@ -124,15 +127,17 @@ async def process_selected_messages(
         if summary_lines:
             summary_text = "\n".join(summary_lines)
 
-            # Update or create pinned message
-            if data.pinned_message_id:
+            # Always create new pinned message if the previous one was removed
+            if pinned_message_was_removed or not data.pinned_message_id:
+                await create_new_pinned_message(chat_id, context, summary_text)
+            else:
+                # Try to update existing pinned message
                 success = await safe_edit_message(
                     context, chat_id, data.pinned_message_id, summary_text
                 )
                 if not success:
+                    # If edit failed, create new pinned message
                     await create_new_pinned_message(chat_id, context, summary_text)
-            else:
-                await create_new_pinned_message(chat_id, context, summary_text)
 
             # Delete all selected messages
             for msg_data in data.selected_messages:
