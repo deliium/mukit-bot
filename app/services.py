@@ -91,8 +91,29 @@ async def process_selected_messages(
 
         # Add new messages to processed messages list
         for msg_data in data.selected_messages:
+            # Check if this is a manually specified time (from .H.MM or .HH.MM prefix)
+            # If so, preserve it. Otherwise, use current time to fix offline upload issues
+            original_timestamp = msg_data["timestamp"]
+            
+            # If the timestamp is in HH.MM format and doesn't match current time,
+            # it's likely a manually specified time, so preserve it
+            if isinstance(original_timestamp, str) and "." in original_timestamp:
+                try:
+                    current_time = datetime.now()
+                    current_timestamp = current_time.strftime("%H.%M")
+                    
+                    # If timestamp doesn't match current time, it's manually specified
+                    if original_timestamp != current_timestamp:
+                        timestamp = original_timestamp  # Preserve manual time
+                    else:
+                        timestamp = format_timestamp()  # Use current time for offline messages
+                except Exception:
+                    timestamp = format_timestamp()  # Fallback to current time
+            else:
+                timestamp = format_timestamp()  # Use current time for non-HH.MM format
+            
             new_message = {
-                "timestamp": msg_data["timestamp"],
+                "timestamp": timestamp,
                 "content": msg_data["content"],
             }
 
