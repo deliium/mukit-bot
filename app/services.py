@@ -94,23 +94,23 @@ async def process_selected_messages(
             # For offline messages, we want to use the time when the message is actually processed,
             # not when it was originally sent (which we can't reliably determine)
             # Only preserve manually specified times from .H.MM or .HH.MM prefixes
-            
+
             # Check if this is a manually specified time by looking at the content
             # Manual times are passed through from handlers with the correct timestamp
             original_timestamp = msg_data["timestamp"]
-            
+
             # Simple heuristic: if the timestamp is very different from current time,
             # it's likely manually specified (like .14.30 work)
             current_time = datetime.now()
             current_timestamp = current_time.strftime("%H.%M")
-            
+
             if original_timestamp != current_timestamp:
                 # Different from current time - likely manually specified, preserve it
                 timestamp = original_timestamp
             else:
                 # Same as current time - use current time (handles offline messages correctly)
                 timestamp = format_timestamp()
-            
+
             new_message = {
                 "timestamp": timestamp,
                 "content": msg_data["content"],
